@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Scraper Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="mesh"></div>
+
+    <div class="container">
+        <h1>Web Scraper Pro</h1>
+        <p class="subtitle">Extrae HTML, CSS, JS y Fuentes de cualquier sitio web.</p>
+
+        <div class="input-group">
+            <input type="url" id="urlInput" placeholder="Ingresa la URL del sitio web (https://...)" required>
+        </div>
+
+        <div class="options-group" style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" id="reactCheck" style="width: auto;">
+            <label for="reactCheck" style="color: #cbd5e1; cursor: pointer;">Convertir a React (JSX)</label>
+        </div>
+
+        <button id="scrapeBtn" class="btn-primary" onclick="startScraping()">
+            ✨ Iniciar Extracción
+        </button>
+
+        <div id="statusContainer" class="status-container">
+            <div class="loader">
+                <div class="loader-bar"></div>
+            </div>
+            <div id="logOutput" class="log-output">
+                Iniciando motor...
+            </div>
+        </div>
+
+        <div id="downloadLink" class="download-link">
+            <a href="#" id="zipUrl" class="download-btn">
+                📦 Descargar ZIP
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const scrapeBtn = document.getElementById('scrapeBtn');
+        const urlInput = document.getElementById('urlInput');
+        const statusContainer = document.getElementById('statusContainer');
+        const logOutput = document.getElementById('logOutput');
+        const downloadLink = document.getElementById('downloadLink');
+        const zipUrl = document.getElementById('zipUrl');
+
+        function log(msg) {
+            const line = document.createElement('div');
+            line.textContent = `> ${msg}`;
+            logOutput.appendChild(line);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        async function startScraping() {
+            const url = urlInput.value.trim();
+            const convertToReact = document.getElementById('reactCheck').checked;
+
+            if (!url) return alert('Por favor ingresa una URL válida');
+
+            // Reset UI
+            scrapeBtn.disabled = true;
+            scrapeBtn.textContent = '⏳ Procesando...';
+            statusContainer.classList.add('visible');
+            downloadLink.style.display = 'none';
+            logOutput.innerHTML = '';
+            log(`Conectando con el servidor...`);
+            log(`Objetivo: ${url}`);
+            if (convertToReact) log('⚛️  Modo React activado');
+
+            try {
+                const response = await fetch('/api/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, convertToReact })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    log('✅ Proceso completado exitosamente.');
+                    log('📦 Generando enlace de descarga...');
+
+                    zipUrl.href = data.downloadUrl;
+                    downloadLink.style.display = 'block';
+                    scrapeBtn.textContent = '✨ Nueva Extracción';
+                } else {
+                    log('❌ Error: ' + (data.error || 'Desconocido'));
+                }
+
+            } catch (error) {
+                log('❌ Error de red: ' + error.message);
+            } finally {
+                scrapeBtn.disabled = false;
+                if (scrapeBtn.textContent === '⏳ Procesando...') {
+                    scrapeBtn.textContent = '✨ Iniciar Extracción';
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
